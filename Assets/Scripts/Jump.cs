@@ -1,99 +1,64 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class Jump : MonoBehaviour
 {
     [SerializeField] float jumpForce;
     private Rigidbody2D rb;
-    private bool isGround;
-    private bool onLeftWall;
-    private bool onRightWall;
     private bool isWallsliding;
     private bool isWallJumping;
     private float wallJUmpingTime = 0.2f;
     private float wallJumpingCounter;
-    private float wallJumpingDuraction = 0.4f;
+    private float wallJumpingDuration = 0.4f;
     private float wallJumpingDirection;
+    [SerializeField] private float wallSlidingSpeed = 10f;
+    [SerializeField] private float runSpeed = 10f;
     private Vector2 wallJumpingPower = new Vector2 (8f, 5f);
 
-    public Transform wallLeftCheck;
-    public Transform groundCheck;
-    public Transform wallRightCheck;
-    public float wallRadius = 0.3f;
-    private float wallSlidingSpeed = 10f;
-    [SerializeField]private LayerMask whatIsground;
-    [SerializeField]private LayerMask thatsLeftWall;
-    [SerializeField]private LayerMask thatsRightWall;
+
+    private int facingDirection;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private Transform wallCheck;
+    [SerializeField] private float wallCheckDistance = 0.3f;
+    [SerializeField] private float groundCheckRadius = 0.3f;
+    [SerializeField] private LayerMask groundLayer;
 
 
     private Vector2 leftJump = new Vector2(-1, 1);
     private Vector2 rightJump = new Vector2(1, 1);
     private Vector2 jump = new Vector2(0, 1);
 
-    private void Start()
+    public bool Ground => Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+    public bool WallFront => Physics2D.Raycast(wallCheck.position, Vector2.right * facingDirection, wallCheckDistance, groundLayer);
+    public bool WallBack => Physics2D.Raycast(wallCheck.position, Vector2.right * -facingDirection, wallCheckDistance, groundLayer);
+
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        onLeftWall = false;
-        onRightWall = false;
+
+        facingDirection = 1;
     }
-    private void FixedUpdate()
+    private void Update()
     {
-        onRightWall = Physics2D.OverlapCircle(wallRightCheck.position, wallRadius, thatsRightWall);
-        onLeftWall = Physics2D.OverlapCircle(wallLeftCheck.position, wallRadius, thatsLeftWall);
-        isGround = Physics2D.OverlapCircle(groundCheck.position, 0.1f, whatIsground);
-        
+        if (Ground) MoveState();
     }
-
-
-    /*
-    private void OnCollisionExit2D(Collision2D collision)
+    private void MoveState()
     {
-        if (collision.collider.CompareTag("Ground"))
-        {
-            isGround = false;
-        }
-
+        rb.velocity = new Vector2(runSpeed, rb.velocity.y);
     }
-
-     if (onLeftWall && !isGround)
-        {
-            rb.velocity = rightJump * jumpForce;
-
-        }
-        if (onRightWall && !isGround)
-        {
-            rb.velocity = leftJump * jumpForce;
-
-        }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.collider.CompareTag("Ground"))
-        {
-            isGround = true;
-        }
-
-    }
-    */
-    
     private void WallSlide()
     {
-        Debug.Log(onRightWall);
-        if (onRightWall && !isGround)
+        if (WallFront && !Ground)
         {
-            Debug.Log("asd");
             isWallsliding = true;
             rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlidingSpeed, float.MaxValue));
-            
         }
         else
         {
             isWallsliding = false;
         }
     }
-    private void WallJump ()
+    private void WallJump()
     {
         if (isWallsliding)
         {
@@ -126,26 +91,14 @@ public class Jump : MonoBehaviour
         isWallJumping = false;
     }
 
-
     public void Onclick()
     {
         
-        if (isGround)
+        if (Ground)
         {
             rb.velocity = rightJump * jumpForce;
-            
-            
         }
         WallSlide();
         WallJump();
-        
-
-
-
-
-       
-
-
-
     }
 }
